@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/openapi.json",
+      "dest": "/api/openapi"
+    },
+    {
+      "src": "/api/generate-video",
+      "dest": "/api/generate-video"
+    },
+    {
+      "src": "/api/huggingface-proxy",
+      "dest": "/api/huggingface-proxy"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index"
+    }
+  ]
+} 

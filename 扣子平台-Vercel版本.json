@@ -1,0 +1,34 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "AIshipinshengchengqi",
+  "name_for_human": "AI图片转视频生成器", 
+  "description_for_model": "基于用户提示词生成图片并制作成5-10秒视频，支持多种AI服务，完全免费使用",
+  "description_for_human": "基于用户提示词生成图片并制作成5-10秒视频，支持多种AI服务，完全免费使用",
+  "auth": {
+    "type": "none",
+    "service_token": "",
+    "sub_type": "",
+    "payload": ""
+  },
+  "logo_url": "plugin_icon/default_icon.png",
+  "contact_email": "support@example.com",
+  "legal_info_url": "http://www.example.com/legal",
+  "api": {
+    "type": "openapi", 
+    "url": "https://您的项目名.vercel.app/openapi.json"
+  },
+  "common_params": {
+    "body": [],
+    "header": [
+      {
+        "name": "User-Agent",
+        "value": "Coze/1.0"
+      }
+    ],
+    "path": [],
+    "query": []
+  },
+  "select_mode": null,
+  "api_extend": null,
+  "description_for_claude3": ""
+} 

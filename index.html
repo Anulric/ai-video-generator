@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI图片转视频生成器 - 测试页面</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .progress {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .media-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .media-preview img, .media-preview video {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 AI图片转视频生成器</h1>
+        
+        <form id="generateForm">
+            <div class="form-group">
+                <label for="prompt">提示词 *</label>
+                <textarea id="prompt" placeholder="描述您想要生成的图片内容，例如：一只可爱的小猫在阳光明媚的花园里玩耍，卡通风格，明亮色彩" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="style">风格</label>
+                <select id="style">
+                    <option value="realistic">写实风格</option>
+                    <option value="cartoon">卡通风格</option>
+                    <option value="anime">动漫风格</option>
+                    <option value="artistic">艺术风格</option>
+                    <option value="cinematic">电影风格</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">视频时长（秒）</label>
+                <input type="number" id="duration" min="5" max="10" value="8">
+            </div>
+            
+            <div class="form-group">
+                <label for="resolution">分辨率</label>
+                <select id="resolution">
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="generateBtn">🎯 开始生成</button>
+        </form>
+        
+        <div class="progress" id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p id="progressText">正在处理...</p>
+        </div>
+        
+        <div class="result" id="result">
+            <h3 id="resultTitle"></h3>
+            <p id="resultMessage"></p>
+            <div class="media-preview" id="mediaPreview"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let pollInterval = null;
+
+        document.getElementById('generateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                prompt: document.getElementById('prompt').value,
+                style: document.getElementById('style').value,
+                duration: parseInt(document.getElementById('duration').value),
+                resolution: document.getElementById('resolution').value
+            };
+
+            try {
+                showProgress(true);
+                updateProgress(0, '正在创建任务...');
+                
+                const response = await fetch('/api/generate-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentTaskId = data.taskId;
+                    updateProgress(10, '任务已创建，开始生成...');
+                    startPolling();
+                } else {
+                    showResult('error', '生成失败', data.error || '未知错误');
+                    showProgress(false);
+                }
+            } catch (error) {
+                showResult('error', '网络错误', error.message);
+                showProgress(false);
+            }
+        });
+
+        async function startPolling() {
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/task-status/${currentTaskId}`);
+                    const task = await response.json();
+
+                    updateProgress(task.progress, task.message);
+
+                    if (task.status === 'completed') {
+                        clearInterval(pollInterval);
+                        showProgress(false);
+                        showResult('success', '生成完成！', '您的图片和视频已经生成完成');
+                        
+                        let mediaHtml = '';
+                        if (task.imageUrl) {
+                            mediaHtml += `<p><strong>生成的图片：</strong></p><img src="${task.imageUrl}" alt="生成的图片">`;
+                        }
+                        if (task.videoUrl) {
+                            mediaHtml += `<p><strong>生成的视频：</strong></p><video controls><source src="${task.videoUrl}" type="video/mp4"></video>`;
+                        }
+                        document.getElementById('mediaPreview').innerHTML = mediaHtml;
+                        
+                    } else if (task.status === 'failed') {
+                        clearInterval(pollInterval);
+                        showProgress(false);
+                        showResult('error', '生成失败', task.error || '未知错误');
+                    }
+                } catch (error) {
+                    console.error('轮询错误:', error);
+                }
+            }, 2000);
+        }
+
+        function showProgress(show) {
+            document.getElementById('progress').style.display = show ? 'block' : 'none';
+            document.getElementById('generateBtn').disabled = show;
+            document.getElementById('generateBtn').textContent = show ? '⏳ 生成中...' : '🎯 开始生成';
+        }
+
+        function updateProgress(percent, message) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = message;
+        }
+
+        function showResult(type, title, message) {
+            const result = document.getElementById('result');
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultMessage').textContent = message;
+        }
+    </script>
+</body>
+</html> 
